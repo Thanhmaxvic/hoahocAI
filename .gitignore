@@ -1,4 +1,15 @@
-# API Key config (KHÔNG push lên GitHub)
+# Dependencies
+node_modules/
+
+# Build
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Old config (no longer needed)
 config.js
 
 # OS files
@@ -8,3 +19,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Vercel
+.vercel
