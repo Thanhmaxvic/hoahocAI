@@ -1,0 +1,10 @@
+# API Key config (KHÔNG push lên GitHub)
+config.js
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
