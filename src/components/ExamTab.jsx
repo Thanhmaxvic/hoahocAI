@@ -214,6 +214,35 @@ function ExamRenderer({ exam }) {
               <div className="essay-question" key={q.id}>
                 <h4>{q.title}</h4>
                 <div dangerouslySetInnerHTML={{ __html: q.content }}></div>
+                
+                {/* Khu vực nhập liệu tự luận */}
+                <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-main)', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
+                  <textarea 
+                    placeholder="Nhập phần trình bày tự luận của bạn vào đây..." 
+                    style={{ 
+                      width: '100%', 
+                      minHeight: '120px', 
+                      padding: '1rem', 
+                      borderRadius: 'var(--radius-md)', 
+                      border: '1px solid var(--border-color)', 
+                      outline: 'none', 
+                      fontFamily: 'inherit',
+                      fontSize: '0.95rem',
+                      resize: 'vertical',
+                      background: 'var(--bg-card)',
+                      color: 'var(--text-main)'
+                    }}
+                  ></textarea>
+                  
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <button style={{ padding: '0.5rem 1rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s' }} onMouseOver={e=>e.currentTarget.style.borderColor='var(--primary)'} onMouseOut={e=>e.currentTarget.style.borderColor='var(--border-color)'}>
+                      <i className="fas fa-image" style={{color: 'var(--primary)'}}></i> Đính kèm ảnh
+                    </button>
+                    <button style={{ padding: '0.5rem 1rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s' }} onMouseOver={e=>e.currentTarget.style.borderColor='var(--blue-500)'} onMouseOut={e=>e.currentTarget.style.borderColor='var(--border-color)'}>
+                      <i className="fas fa-file-word" style={{color: 'var(--blue-500)'}}></i> Nộp File (.docx, .pdf)
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
