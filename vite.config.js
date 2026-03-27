@@ -115,7 +115,6 @@ function geminiApiPlugin() {
             res.end(JSON.stringify({ fallback: true, message: 'Tạo hình ảnh không khả dụng lúc này.' }))
           }
         })
-        })
       })
 
       // POST /api/grade-essay — proxy to Gemini for auto-grading
