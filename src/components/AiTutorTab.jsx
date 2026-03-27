@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 function AiTutorTab({ showToast, setLoading }) {
   const [messages, setMessages] = useState([])
@@ -7,17 +7,21 @@ function AiTutorTab({ showToast, setLoading }) {
   const inputRef = useRef(null)
   const chatRef = useRef(null)
 
-  const appendMessage = (role, text) => {
-    setMessages(prev => [...prev, { role, text, id: Date.now() }])
-    setShowWelcome(false)
+  const scrollToBottom = useCallback(() => {
     setTimeout(() => {
       if (chatRef.current) {
         chatRef.current.scrollTop = chatRef.current.scrollHeight
       }
     }, 50)
-  }
+  }, [])
 
-  const appendImage = (url, prompt) => {
+  const appendMessage = useCallback((role, text) => {
+    setMessages(prev => [...prev, { role, text, id: Date.now() }])
+    setShowWelcome(false)
+    scrollToBottom()
+  }, [scrollToBottom])
+
+  const appendImage = useCallback((url, prompt) => {
     setMessages(prev => [...prev, { 
       role: 'ai', 
       type: 'image', 
@@ -26,12 +30,8 @@ function AiTutorTab({ showToast, setLoading }) {
       id: Date.now() 
     }])
     setShowWelcome(false)
-    setTimeout(() => {
-      if (chatRef.current) {
-        chatRef.current.scrollTop = chatRef.current.scrollHeight
-      }
-    }, 50)
-  }
+    scrollToBottom()
+  }, [scrollToBottom])
 
   const parseMarkdown = (text) => {
     let parsed = text
@@ -47,12 +47,12 @@ function AiTutorTab({ showToast, setLoading }) {
     return parsed
   }
 
-  const sendChatMessage = async () => {
-    const query = inputRef.current?.value?.trim()
+  const sendChatMessage = useCallback(async (directText) => {
+    const query = directText || inputRef.current?.value?.trim()
     if (!query || sending) return
 
     appendMessage('user', query)
-    inputRef.current.value = ''
+    if (inputRef.current) inputRef.current.value = ''
     setSending(true)
 
     const lowerQuery = query.toLowerCase()
@@ -69,7 +69,9 @@ function AiTutorTab({ showToast, setLoading }) {
         setLoading(false)
 
         const result = await response.json()
-        if (result.imageBase64) {
+        if (result.imageUrl) {
+          appendImage(result.imageUrl, query)
+        } else if (result.imageBase64) {
           const imageUrl = `data:image/png;base64,${result.imageBase64}`
           appendImage(imageUrl, query)
         } else {
@@ -99,14 +101,14 @@ function AiTutorTab({ showToast, setLoading }) {
     } finally {
       setSending(false)
     }
-  }
+  }, [sending, appendMessage, appendImage, setLoading])
 
-  const quickAsk = (text) => {
+  const quickAsk = useCallback((text) => {
     if (inputRef.current) {
-      inputRef.current.value = text
+      inputRef.current.value = ''
     }
-    sendChatMessage()
-  }
+    sendChatMessage(text)
+  }, [sendChatMessage])
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') sendChatMessage()
@@ -149,12 +151,7 @@ function AiTutorTab({ showToast, setLoading }) {
                       <p style={{ fontSize: '0.8em', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                         Hình ảnh minh họa cho: &quot;{msg.caption}&quot;
                       </p>
-                      <img
-                        src={msg.imageUrl}
-                        className="message-image"
-                        alt="Chemistry Diagram"
-                        onClick={() => window.open(msg.imageUrl)}
-                      />
+                      <ChatImage src={msg.imageUrl} alt="Chemistry Diagram" />
                     </div>
                   ) : (
                     <div
@@ -195,7 +192,7 @@ function AiTutorTab({ showToast, setLoading }) {
                 onKeyDown={handleKeyDown}
               />
               <button
-                onClick={sendChatMessage}
+                onClick={() => sendChatMessage()}
                 className="btn-send"
                 id="btn-send"
                 disabled={sending}
@@ -206,6 +203,37 @@ function AiTutorTab({ showToast, setLoading }) {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Image component with loading skeleton and error fallback */
+function ChatImage({ src, alt }) {
+  const [imgState, setImgState] = useState('loading') // 'loading' | 'loaded' | 'error'
+
+  return (
+    <div className="chat-image-container">
+      {imgState === 'loading' && (
+        <div className="image-skeleton">
+          <div className="skeleton-shimmer"></div>
+          <i className="fas fa-image skeleton-icon"></i>
+          <span className="skeleton-text">Đang tạo hình ảnh...</span>
+        </div>
+      )}
+      {imgState === 'error' && (
+        <div className="image-error-fallback">
+          <i className="fas fa-exclamation-triangle"></i>
+          <span>Không thể tải hình ảnh. Hãy thử lại.</span>
+        </div>
+      )}
+      <img
+        src={src}
+        className={`message-image ${imgState === 'loaded' ? 'visible' : 'hidden-img'}`}
+        alt={alt}
+        onLoad={() => setImgState('loaded')}
+        onError={() => setImgState('error')}
+        onClick={() => window.open(src)}
+      />
     </div>
   )
 }

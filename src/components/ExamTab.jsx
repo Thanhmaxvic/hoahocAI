@@ -100,6 +100,21 @@ function ExamRenderer({ exam }) {
   const [essayAnswers, setEssayAnswers] = useState({})
   const [essayFeedback, setEssayFeedback] = useState({})
 
+  const parseMarkdown = (text) => {
+    if (!text) return ''
+    let parsed = text
+    parsed = parsed.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    parsed = parsed.replace(/`(.*?)`/g, '<code>$1</code>')
+    parsed = parsed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    parsed = parsed.replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+    parsed = parsed.replace(/^### (.*$)/gm, '<h4>$1</h4>')
+    parsed = parsed.replace(/^## (.*$)/gm, '<h3>$1</h3>')
+    parsed = parsed.replace(/^- (.*$)/gm, '• $1')
+    parsed = parsed.replace(/\n\n/g, '<br><br>')
+    parsed = parsed.replace(/\n/g, '<br>')
+    return parsed
+  }
+
   const handleEssayTextChange = (qId, text) => {
     setEssayAnswers(prev => ({
       ...prev, [qId]: { ...prev[qId], text }
@@ -346,7 +361,7 @@ function ExamRenderer({ exam }) {
                     <h5 style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.1rem' }}>
                       <i className="fas fa-check-circle"></i> Giám khảo AI nhận xét
                     </h5>
-                    <div className="message-content" dangerouslySetInnerHTML={{ __html: essayFeedback[q.id].result }} style={{ lineHeight: '1.6', fontSize: '0.95rem' }}></div>
+                    <div className="message-content" dangerouslySetInnerHTML={{ __html: parseMarkdown(essayFeedback[q.id].result) }} style={{ lineHeight: '1.6', fontSize: '0.95rem' }}></div>
                   </div>
                 )}
                 {essayFeedback[q.id]?.error && (

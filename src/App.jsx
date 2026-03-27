@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Navbar from './components/Navbar'
 import TheoryTab from './components/TheoryTab'
 import PracticeTab from './components/PracticeTab'
@@ -12,6 +12,7 @@ function App() {
   const [theme, setTheme] = useState('light')
   const [loading, setLoading] = useState(false)
   const [toasts, setToasts] = useState([])
+  const [tabTransition, setTabTransition] = useState(false)
 
   const toggleTheme = useCallback(() => {
     setTheme(prev => {
@@ -30,11 +31,16 @@ function App() {
   }, [])
 
   const switchTab = useCallback((tabId) => {
-    setActiveTab(tabId)
-    if (tabId !== 'theory') {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }
-  }, [])
+    if (tabId === activeTab) return
+    setTabTransition(true)
+    setTimeout(() => {
+      setActiveTab(tabId)
+      setTabTransition(false)
+      if (tabId !== 'theory') {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }
+    }, 150)
+  }, [activeTab])
 
   return (
     <>
@@ -51,7 +57,7 @@ function App() {
         <div className="progress-bar" id="progress-bar"></div>
       </div>
 
-      <main className="main-content">
+      <main className={`main-content ${tabTransition ? 'tab-transitioning' : ''}`}>
         {activeTab === 'theory' && <TheoryTab />}
         {activeTab === 'practice' && <PracticeTab showToast={showToast} />}
         {activeTab === 'exam' && <ExamTab />}
@@ -67,12 +73,14 @@ function App() {
 
 function ScrollTopButton() {
   const [visible, setVisible] = useState(false)
-  
-  if (typeof window !== 'undefined') {
-    window.addEventListener('scroll', () => {
+
+  useEffect(() => {
+    const handleScroll = () => {
       setVisible(window.scrollY > 300)
-    })
-  }
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   return (
     <button 

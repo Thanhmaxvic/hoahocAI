@@ -12,7 +12,7 @@ export const exam_02 = {
     subtitle: 'Chương 6: Đại cương về Kim loại',
     questions: [
       {
-        id: 'tl_1',
+        id: 'exam2_tl_1',
         title: 'Câu 1 (2,0 điểm)',
         content: `
           <p>a) Nêu tính chất vật lí chung của kim loại. Giải thích nguyên nhân gây ra những tính chất đó. (1,0 điểm)</p>
@@ -21,7 +21,7 @@ export const exam_02 = {
         `
       },
       {
-        id: 'tl_2',
+        id: 'exam2_tl_2',
         title: 'Câu 2 (2,5 điểm)',
         content: `
           <p>a) Viết phương trình hóa học các phản ứng xảy ra khi cho kim loại Fe tác dụng lần lượt với: (1) dung dịch HCl; (2) khí Cl₂; (3) dung dịch CuSO₄. Nêu rõ vai trò của Fe trong mỗi phản ứng. (1,5 điểm)</p>
@@ -29,7 +29,7 @@ export const exam_02 = {
         `
       },
       {
-        id: 'tl_3',
+        id: 'exam2_tl_3',
         title: 'Câu 3 (2,5 điểm)',
         content: `
           <p>a) Nêu nguyên tắc chung để điều chế kim loại. (0,5 điểm)</p>
@@ -42,7 +42,7 @@ export const exam_02 = {
         `
       },
       {
-        id: 'tl_4',
+        id: 'exam2_tl_4',
         title: 'Câu 4 (3,0 điểm)',
         content: `
           <p>a) Phân biệt ăn mòn hóa học và ăn mòn điện hóa học. Nêu ba điều kiện để xảy ra ăn mòn điện hóa. (1,0 điểm)</p>

@@ -64,7 +64,7 @@ function geminiApiPlugin() {
         })
       })
 
-      // POST /api/image — proxy to Gemini Imagen API
+      // POST /api/image — proxy to Pollinations for chemistry images
       server.middlewares.use('/api/image', async (req, res) => {
         if (req.method !== 'POST') {
           res.statusCode = 405
@@ -77,36 +77,31 @@ function geminiApiPlugin() {
         req.on('end', async () => {
           try {
             const { prompt } = JSON.parse(body)
-            const apiKey = process.env.GEMINI_API_KEY
-            if (!apiKey) {
-              res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify({ fallback: true, message: 'GEMINI_API_KEY not set' }))
-              return
+
+            // Enhanced prompt for chemistry diagrams
+            const lowerPrompt = prompt.toLowerCase()
+            let diagramType = 'chemical diagram'
+            if (lowerPrompt.includes('ăn mòn') || lowerPrompt.includes('corrosion')) {
+              diagramType = 'electrochemical corrosion diagram with anode cathode electron flow arrows'
+            } else if (lowerPrompt.includes('điện phân') || lowerPrompt.includes('electrolysis')) {
+              diagramType = 'electrolysis cell diagram with electrodes ions current flow'
+            } else if (lowerPrompt.includes('tinh thể') || lowerPrompt.includes('mạng')) {
+              diagramType = '3D crystal lattice structure with atoms and bonds'
+            } else if (lowerPrompt.includes('phản ứng') || lowerPrompt.includes('reaction')) {
+              diagramType = 'chemical reaction diagram with reactants products arrows balanced equation'
+            } else if (lowerPrompt.includes('dãy hoạt động') || lowerPrompt.includes('activity series')) {
+              diagramType = 'metal activity series chart with reactivity order'
+            } else if (lowerPrompt.includes('sơ đồ') || lowerPrompt.includes('diagram')) {
+              diagramType = 'detailed educational chemistry schematic diagram'
             }
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
-            const systemPrompt = `Dù bạn không thể xuất ra file ảnh thật, nhưng hãy miêu tả siêu chi tiết cấu trúc, sơ đồ hoặc phản ứng sau: ${prompt}. (Khuyến khích sử dụng sơ đồ ASCII, mã code Mermaid hoặc định dạng bảng chi tiết để người dùng hình dung rõ ràng nhất).`
-
-            const payload = {
-              contents: [{ role: 'user', parts: [{ text: systemPrompt }] }]
-            }
-
-            const response = await fetch(apiUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            })
-
-            if (response.ok) {
-              const result = await response.json()
-              const textMessage = result.candidates?.[0]?.content?.parts?.[0]?.text || "Không tạo được lời diễn giải."
-              res.setHeader('Content-Type', 'application/json')
-              res.end(JSON.stringify({ fallback: true, message: textMessage }))
-              return
-            }
+            const englishPrompt = `Professional educational chemistry ${diagramType} showing: ${prompt}. Clean white background, scientifically accurate, high detail, labeled components, clear annotations, textbook quality illustration style, no watermarks.`
+            const seed = Math.floor(Math.random() * 1000000)
+            const encoded = encodeURIComponent(englishPrompt)
+            const imageUrl = `https://image.pollinations.ai/prompt/${encoded}?width=800&height=600&nologo=true&seed=${seed}`
 
             res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ fallback: true, message: 'Lỗi thiết lập với AI khi tạo diễn giải sơ đồ.' }))
+            res.end(JSON.stringify({ imageUrl }))
           } catch (err) {
             console.error('Dev Image API error:', err)
             res.setHeader('Content-Type', 'application/json')
