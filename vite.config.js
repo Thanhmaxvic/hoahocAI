@@ -84,12 +84,11 @@ function geminiApiPlugin() {
               return
             }
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`
-            const englishPrompt = `A detailed professional chemistry diagram/illustration showing: ${prompt}. Scientific style, clean white background, educational textbook quality.`
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`
+            const systemPrompt = `Dù bạn không thể xuất ra file ảnh thật, nhưng hãy miêu tả siêu chi tiết cấu trúc, sơ đồ hoặc phản ứng sau: ${prompt}. (Khuyến khích sử dụng sơ đồ ASCII, mã code Mermaid hoặc định dạng bảng chi tiết để người dùng hình dung rõ ràng nhất).`
 
             const payload = {
-              instances: [{ prompt: englishPrompt }],
-              parameters: { sampleCount: 1 }
+              contents: [{ role: 'user', parts: [{ text: systemPrompt }] }]
             }
 
             const response = await fetch(apiUrl, {
@@ -100,19 +99,18 @@ function geminiApiPlugin() {
 
             if (response.ok) {
               const result = await response.json()
-              if (result.predictions?.[0]?.bytesBase64Encoded) {
-                res.setHeader('Content-Type', 'application/json')
-                res.end(JSON.stringify({ imageBase64: result.predictions[0].bytesBase64Encoded }))
-                return
-              }
+              const textMessage = result.candidates?.[0]?.content?.parts?.[0]?.text || "Không tạo được lời diễn giải."
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ fallback: true, message: textMessage }))
+              return
             }
 
             res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ fallback: true, message: 'Tài khoản API này có thể chưa được kích hoạt Imagen. Thay vào đó, tôi có thể giải thích bằng văn bản cho bạn nhé!' }))
+            res.end(JSON.stringify({ fallback: true, message: 'Lỗi thiết lập với AI khi tạo diễn giải sơ đồ.' }))
           } catch (err) {
             console.error('Dev Image API error:', err)
             res.setHeader('Content-Type', 'application/json')
-            res.end(JSON.stringify({ fallback: true, message: 'Tạo hình ảnh không khả dụng lúc này.' }))
+            res.end(JSON.stringify({ fallback: true, message: 'Tính năng vẽ sơ đồ hiện không khả dụng.' }))
           }
         })
       })
