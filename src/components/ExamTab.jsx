@@ -97,6 +97,69 @@ function ExamRenderer({ exam }) {
   const [examAnswers, setExamAnswers] = useState({})
   const [examSubmitted, setExamSubmitted] = useState(false)
   const [answerVisible, setAnswerVisible] = useState(false)
+  const [essayAnswers, setEssayAnswers] = useState({})
+  const [essayFeedback, setEssayFeedback] = useState({})
+
+  const handleEssayTextChange = (qId, text) => {
+    setEssayAnswers(prev => ({
+      ...prev, [qId]: { ...prev[qId], text }
+    }))
+  }
+
+  const handleFileUpload = (qId, e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64 = event.target.result
+      setEssayAnswers(prev => ({
+        ...prev,
+        [qId]: {
+          ...prev[qId],
+          files: [...(prev[qId]?.files || []), { name: file.name, type: file.type, data: base64 }]
+        }
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const removeFile = (qId, fileIdx) => {
+    setEssayAnswers(prev => {
+      const newFiles = [...(prev[qId]?.files || [])]
+      newFiles.splice(fileIdx, 1)
+      return { ...prev, [qId]: { ...prev[qId], files: newFiles } }
+    })
+  }
+
+  const submitEssay = async (q) => {
+    const answer = essayAnswers[q.id]
+    if (!answer || (!answer.text && (!answer.files || answer.files.length === 0))) return;
+
+    setEssayFeedback(prev => ({ ...prev, [q.id]: { loading: true } }))
+
+    try {
+      const rubricText = exam.rubric ? JSON.stringify(exam.rubric) : "Chấm theo chuẩn kiến thức Hóa học 12."
+      const payload = {
+        questionId: q.id,
+        questionText: q.content,
+        studentAnswer: answer.text || "",
+        files: answer.files || [],
+        rubric: rubricText
+      }
+
+      const res = await fetch('/api/grade-essay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      const data = await res.json()
+      setEssayFeedback(prev => ({ ...prev, [q.id]: { loading: false, result: data.feedback || data.message } }))
+    } catch (error) {
+      setEssayFeedback(prev => ({ ...prev, [q.id]: { loading: false, error: 'Lỗi khi kết nối AI' } }))
+    }
+  }
 
   const selectAnswer = (qId, optIdx) => {
     if (examSubmitted) return
@@ -219,6 +282,8 @@ function ExamRenderer({ exam }) {
                 <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'var(--bg-main)', padding: '1rem', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-color)' }}>
                   <textarea 
                     placeholder="Nhập phần trình bày tự luận của bạn vào đây..." 
+                    value={essayAnswers[q.id]?.text || ''}
+                    onChange={(e) => handleEssayTextChange(q.id, e.target.value)}
                     style={{ 
                       width: '100%', 
                       minHeight: '120px', 
@@ -234,15 +299,61 @@ function ExamRenderer({ exam }) {
                     }}
                   ></textarea>
                   
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <button style={{ padding: '0.5rem 1rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s' }} onMouseOver={e=>e.currentTarget.style.borderColor='var(--primary)'} onMouseOut={e=>e.currentTarget.style.borderColor='var(--border-color)'}>
-                      <i className="fas fa-image" style={{color: 'var(--primary)'}}></i> Đính kèm ảnh
-                    </button>
-                    <button style={{ padding: '0.5rem 1rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s' }} onMouseOver={e=>e.currentTarget.style.borderColor='var(--blue-500)'} onMouseOut={e=>e.currentTarget.style.borderColor='var(--border-color)'}>
-                      <i className="fas fa-file-word" style={{color: 'var(--blue-500)'}}></i> Nộp File (.docx, .pdf)
+                  {/* Xem trước file đính kèm */}
+                  {essayAnswers[q.id]?.files && essayAnswers[q.id].files.length > 0 && (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                      {essayAnswers[q.id].files.map((f, idx) => (
+                        <div key={idx} style={{ position: 'relative', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden', width: '80px', height: '80px', background: 'white' }}>
+                          {f.type.includes('image') ? (
+                            <img src={f.data} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', color: 'var(--blue-500)', fontSize: '2rem' }}><i className="fas fa-file-pdf"></i></div>
+                          )}
+                          <button onClick={() => removeFile(q.id, idx)} style={{ position: 'absolute', top: '2px', right: '2px', background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '10px' }}>
+                            <i className="fas fa-times"></i>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                      <label style={{ padding: '0.5rem 1rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s' }} onMouseOver={e=>e.currentTarget.style.borderColor='var(--primary)'} onMouseOut={e=>e.currentTarget.style.borderColor='var(--border-color)'}>
+                        <i className="fas fa-image" style={{color: 'var(--primary)'}}></i> Đính kèm ảnh
+                        <input type="file" accept="image/png, image/jpeg" style={{ display: 'none' }} onChange={(e) => handleFileUpload(q.id, e)} />
+                      </label>
+                      <label style={{ padding: '0.5rem 1rem', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-main)', fontSize: '0.9rem', fontWeight: 600, transition: 'all 0.2s' }} onMouseOver={e=>e.currentTarget.style.borderColor='var(--blue-500)'} onMouseOut={e=>e.currentTarget.style.borderColor='var(--border-color)'}>
+                        <i className="fas fa-file-pdf" style={{color: 'var(--blue-500)'}}></i> Nộp File (.pdf)
+                        <input type="file" accept="application/pdf" style={{ display: 'none' }} onChange={(e) => handleFileUpload(q.id, e)} />
+                      </label>
+                    </div>
+
+                    <button 
+                      onClick={() => submitEssay(q)}
+                      disabled={essayFeedback[q.id]?.loading || (!essayAnswers[q.id]?.text && (!essayAnswers[q.id]?.files || essayAnswers[q.id]?.files.length === 0))}
+                      style={{ padding: '0.5rem 1.25rem', background: 'var(--primary)', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', color: 'white', fontSize: '0.9rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: (!essayAnswers[q.id]?.text && (!essayAnswers[q.id]?.files || essayAnswers[q.id]?.files.length === 0)) ? 0.5 : 1 }}
+                    >
+                      {essayFeedback[q.id]?.loading ? <span className="spinner-small" style={{width: '14px', height: '14px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', borderRadius: '50%', display: 'inline-block', animation: 'spin 1s linear infinite'}}></span> : <i className="fas fa-robot"></i>}
+                      Nhờ AI Chấm điểm
                     </button>
                   </div>
                 </div>
+
+                {/* Kết quả chấm điểm AI */}
+                {essayFeedback[q.id] && !essayFeedback[q.id].loading && essayFeedback[q.id].result && (
+                  <div style={{ marginTop: '1rem', background: 'rgba(59,130,246,0.05)', border: '1px solid var(--primary)', borderRadius: 'var(--radius-lg)', padding: '1.5rem' }}>
+                    <h5 style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', fontSize: '1.1rem' }}>
+                      <i className="fas fa-check-circle"></i> Giám khảo AI nhận xét
+                    </h5>
+                    <div className="message-content" dangerouslySetInnerHTML={{ __html: essayFeedback[q.id].result }} style={{ lineHeight: '1.6', fontSize: '0.95rem' }}></div>
+                  </div>
+                )}
+                {essayFeedback[q.id]?.error && (
+                  <div style={{ marginTop: '1rem', color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '1rem', borderRadius: 'var(--radius-md)' }}>
+                    <i className="fas fa-exclamation-triangle"></i> {essayFeedback[q.id].error}
+                  </div>
+                )}
               </div>
             ))}
           </div>
