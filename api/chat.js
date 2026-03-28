@@ -1,11 +1,21 @@
 export default async function handler(req, res) {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-        return res.status(500).json({ error: 'API key not configured on server' });
+        console.error('GEMINI_API_KEY is not set in environment variables');
+        return res.status(500).json({ error: 'API key not configured on server. Hãy kiểm tra biến môi trường GEMINI_API_KEY trên Vercel.' });
     }
 
     try {
@@ -25,15 +35,26 @@ export default async function handler(req, res) {
             generationConfig: { temperature: 0.7 }
         };
 
+        // Add AbortController with 30s timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         const response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
             const errorData = await response.text();
-            return res.status(response.status).json({ error: 'Gemini API error', details: errorData });
+            console.error(`Gemini API returned ${response.status}:`, errorData);
+            return res.status(response.status).json({ 
+                error: 'Gemini API error', 
+                details: errorData 
+            });
         }
 
         const result = await response.json();
@@ -41,7 +62,15 @@ export default async function handler(req, res) {
         
         return res.status(200).json({ text });
     } catch (error) {
-        console.error('Chat API error:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('Chat API error:', error.name, error.message);
+        
+        if (error.name === 'AbortError') {
+            return res.status(504).json({ error: 'Gemini API timeout - phản hồi quá lâu, vui lòng thử lại.' });
+        }
+        
+        return res.status(500).json({ 
+            error: 'Internal server error', 
+            details: error.message 
+        });
     }
 }

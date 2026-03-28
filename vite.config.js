@@ -37,14 +37,21 @@ function geminiApiPlugin() {
               generationConfig: { temperature: 0.7 }
             }
 
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 30000)
+
             const response = await fetch(apiUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
+              body: JSON.stringify(payload),
+              signal: controller.signal
             })
+
+            clearTimeout(timeoutId)
 
             if (!response.ok) {
               const errText = await response.text()
+              console.error(`Gemini API returned ${response.status}:`, errText)
               res.statusCode = response.status
               res.setHeader('Content-Type', 'application/json')
               res.end(JSON.stringify({ error: 'Gemini API error', details: errText }))

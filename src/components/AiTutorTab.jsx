@@ -68,6 +68,14 @@ function AiTutorTab({ showToast, setLoading }) {
         })
         setLoading(false)
 
+        if (!response.ok) {
+          let errorMsg = `HTTP ${response.status}`
+          try { const errData = await response.json(); errorMsg = errData.error || errData.details || errorMsg } catch {}
+          console.error('Image API error:', errorMsg)
+          appendMessage('ai', `Lỗi tạo hình ảnh: ${errorMsg}. Vui lòng thử lại.`)
+          return
+        }
+
         const result = await response.json()
         if (result.imageUrl) {
           appendImage(result.imageUrl, query)
@@ -87,7 +95,17 @@ function AiTutorTab({ showToast, setLoading }) {
         setLoading(false)
 
         if (!response.ok) {
-          throw new Error('API error')
+          let errorDetail = `HTTP ${response.status}`
+          try {
+            const errData = await response.json()
+            errorDetail = errData.error || errData.details || errorDetail
+            if (errData.details && errData.error) {
+              errorDetail = `${errData.error}: ${typeof errData.details === 'string' ? errData.details : JSON.stringify(errData.details)}`
+            }
+          } catch {}
+          console.error('Chat API error:', errorDetail)
+          appendMessage('ai', `⚠️ Lỗi từ server: ${errorDetail}. Vui lòng thử lại sau.`)
+          return
         }
 
         const result = await response.json()
@@ -96,8 +114,8 @@ function AiTutorTab({ showToast, setLoading }) {
       }
     } catch (error) {
       setLoading(false)
-      console.error(error)
-      appendMessage('ai', 'Rất tiếc, đã có lỗi kết nối với AI. Vui lòng thử lại sau.')
+      console.error('Network error:', error)
+      appendMessage('ai', `⚠️ Lỗi kết nối mạng: ${error.message || 'Không thể kết nối tới server'}. Vui lòng kiểm tra kết nối và thử lại.`)
     } finally {
       setSending(false)
     }
