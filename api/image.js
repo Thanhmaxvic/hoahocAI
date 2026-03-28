@@ -41,7 +41,7 @@ export default async function handler(req, res) {
         const englishPrompt = `Professional educational chemistry ${diagramType} showing: ${prompt}. Clean white background, scientifically accurate, high detail, labeled components, clear annotations, textbook quality illustration style, no watermarks.`;
         const seed = Math.floor(Math.random() * 1000000);
         const encoded = encodeURIComponent(englishPrompt);
-        const imageUrl = `https://image.pollinations.ai/prompt/${encoded}?width=800&height=600&nologo=true&seed=${seed}`;
+        const imageUrl = `https://gen.pollinations.ai/image/${encoded}?width=800&height=600&nologo=true&seed=${seed}&model=flux`;
         
         return res.status(200).json({ imageUrl });
     } catch (error) {
