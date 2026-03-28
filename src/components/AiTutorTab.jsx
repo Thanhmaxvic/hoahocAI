@@ -80,7 +80,8 @@ function AiTutorTab({ showToast, setLoading }) {
         if (result.imageUrl) {
           appendImage(result.imageUrl, query)
         } else if (result.imageBase64) {
-          const imageUrl = `data:image/png;base64,${result.imageBase64}`
+          const mimeType = result.mimeType || 'image/png'
+          const imageUrl = `data:${mimeType};base64,${result.imageBase64}`
           appendImage(imageUrl, query)
         } else {
           appendMessage('ai', result.message || 'Tạo hình ảnh không khả dụng lúc này.')

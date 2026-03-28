@@ -14,14 +14,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Missing prompt' });
         }
 
-        // Enhanced prompt for chemistry diagrams with better accuracy
-        const chemistryKeywords = [
-            'molecular structure', 'chemical bonds', 'reaction mechanism',
-            'electron transfer', 'electrochemical cell', 'crystal lattice',
-            'periodic table element', 'oxidation reduction'
-        ];
-        
-        // Detect type of chemistry diagram
+        // Enhanced prompt for chemistry diagrams
         const lowerPrompt = prompt.toLowerCase();
         let diagramType = 'chemical diagram';
         if (lowerPrompt.includes('ăn mòn') || lowerPrompt.includes('corrosion')) {
@@ -39,11 +32,67 @@ export default async function handler(req, res) {
         }
 
         const englishPrompt = `Professional educational chemistry ${diagramType} showing: ${prompt}. Clean white background, scientifically accurate, high detail, labeled components, clear annotations, textbook quality illustration style, no watermarks.`;
-        const seed = Math.floor(Math.random() * 1000000);
-        const encoded = encodeURIComponent(englishPrompt);
-        const imageUrl = `https://gen.pollinations.ai/image/${encoded}?width=800&height=600&nologo=true&seed=${seed}&model=flux`;
+
+        // Use Gemini API for image generation
+        const model = 'gemini-3.1-flash-image-preview';
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+        const geminiResponse = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: englishPrompt }]
+                }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                }
+            })
+        });
+
+        if (!geminiResponse.ok) {
+            const errText = await geminiResponse.text();
+            console.error('Gemini API error:', geminiResponse.status, errText);
+            return res.status(500).json({ 
+                error: `Gemini API error: ${geminiResponse.status}`,
+                details: errText
+            });
+        }
+
+        const data = await geminiResponse.json();
         
-        return res.status(200).json({ imageUrl });
+        // Extract image from response parts
+        const candidates = data.candidates;
+        if (!candidates || candidates.length === 0) {
+            return res.status(200).json({ 
+                message: 'Không thể tạo hình ảnh cho yêu cầu này. Vui lòng thử lại với mô tả khác.' 
+            });
+        }
+
+        const parts = candidates[0].content?.parts || [];
+        let imageBase64 = null;
+        let mimeType = 'image/png';
+
+        for (const part of parts) {
+            if (part.inlineData) {
+                imageBase64 = part.inlineData.data;
+                mimeType = part.inlineData.mimeType || 'image/png';
+                break;
+            }
+        }
+
+        if (imageBase64) {
+            return res.status(200).json({ 
+                imageBase64,
+                mimeType
+            });
+        } else {
+            // No image in response, return text message
+            const textParts = parts.filter(p => p.text).map(p => p.text).join('\n');
+            return res.status(200).json({ 
+                message: textParts || 'Không thể tạo hình ảnh lúc này. Vui lòng thử lại.'
+            });
+        }
     } catch (error) {
         console.error('Image API error:', error);
         return res.status(200).json({ 
