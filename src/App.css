@@ -839,6 +839,74 @@ body {
     opacity: 0.5;
 }
 
+/* ============ TRUE/FALSE QUESTION STYLES ============ */
+.tf-statements {
+    display: flex; flex-direction: column; gap: 0.75rem; margin-top: 0.5rem;
+}
+.tf-statement {
+    display: flex; align-items: center; gap: 0.75rem; padding: 0.85rem 1rem;
+    background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-color);
+    transition: all 0.2s; flex-wrap: wrap;
+}
+.tf-statement:hover { border-color: var(--primary); }
+.tf-statement.tf-correct { background: rgba(16,185,129,0.05); border-color: var(--emerald-500); }
+.tf-statement.tf-wrong { background: rgba(239,68,68,0.05); border-color: #ef4444; }
+.tf-label { font-weight: 700; color: var(--primary); min-width: 1.5rem; }
+.tf-text { flex: 1; min-width: 200px; font-size: 0.95rem; line-height: 1.5; }
+.tf-buttons { display: flex; gap: 0.5rem; flex-shrink: 0; }
+.tf-btn {
+    padding: 0.4rem 0.85rem; border-radius: var(--radius-md); border: 2px solid var(--border-color);
+    background: var(--bg-card); cursor: pointer; font-family: inherit; font-size: 0.85rem;
+    font-weight: 700; transition: all 0.2s; display: flex; align-items: center; gap: 0.35rem; color: var(--text-muted);
+}
+.tf-btn:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.tf-btn:disabled { cursor: not-allowed; }
+.tf-btn-true.selected { background: rgba(16,185,129,0.15); border-color: var(--emerald-500); color: var(--emerald-500); }
+.tf-btn-false.selected { background: rgba(239,68,68,0.15); border-color: #ef4444; color: #ef4444; }
+.tf-btn.correct-answer { box-shadow: 0 0 0 2px var(--emerald-500); }
+.tf-result-icon { flex-shrink: 0; font-size: 1.1rem; }
+
+/* ============ SHORT ANSWER QUESTION STYLES ============ */
+.sa-input-group { margin-top: 0.5rem; }
+.sa-input-wrapper {
+    display: flex; align-items: center; gap: 0.75rem; position: relative;
+}
+.sa-input-icon { color: var(--text-muted); font-size: 0.9rem; flex-shrink: 0; }
+.sa-input {
+    flex: 1; padding: 0.75rem 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md);
+    font-family: inherit; font-size: 1rem; color: var(--text-main); background: var(--bg-main);
+    outline: none; transition: border-color 0.2s;
+}
+.sa-input:focus { border-color: var(--primary); }
+.sa-input:disabled { cursor: not-allowed; opacity: 0.9; }
+.sa-input.sa-correct { border-color: var(--emerald-500); background: rgba(16,185,129,0.05); }
+.sa-input.sa-wrong { border-color: #ef4444; background: rgba(239,68,68,0.05); }
+.sa-result-icon { flex-shrink: 0; font-size: 1.1rem; }
+.sa-correct-answer {
+    margin-top: 0.5rem; padding: 0.5rem 1rem; background: rgba(16,185,129,0.1);
+    border-radius: var(--radius-md); font-size: 0.9rem; color: var(--emerald-500);
+    display: flex; align-items: center; gap: 0.5rem;
+}
+
+/* ============ PRACTICE TAB TF/SA CARD STYLES ============ */
+.practice-tf-card, .practice-sa-card {
+    background: var(--bg-card); border-radius: var(--radius-xl); padding: 2rem;
+    border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);
+    animation: fadeIn 0.3s ease-out; margin-bottom: 1.5rem;
+}
+.practice-tf-card.answered-correct, .practice-sa-card.answered-correct {
+    border-left: 4px solid var(--emerald-500);
+}
+.practice-tf-card.answered-wrong, .practice-sa-card.answered-wrong {
+    border-left: 4px solid #ef4444;
+}
+
+/* ============ EXAM FILTER & CONTROLS ============ */
+.exam-controls select {
+    padding: 0.4rem 0.75rem; border-radius: var(--radius-md); font-size: 0.9rem;
+}
+.exam-tabs { margin-bottom: 2rem; }
+
 /* Responsive improvements */
 @media (max-width: 768px) {
     .hero-visual { display: none; }
@@ -847,4 +915,8 @@ body {
     .section-title { font-size: 1.5rem; }
     .exam-hero-title { font-size: 1.5rem; }
     .chat-wrapper { height: calc(100vh - 6rem); }
+    .tf-statement { flex-direction: column; align-items: flex-start; }
+    .tf-buttons { margin-left: 0; margin-top: 0.5rem; }
+    .exam-tabs { gap: 0.5rem; }
+    .exam-tab-btn { padding: 0.5rem 0.75rem; font-size: 0.8rem; }
 }
