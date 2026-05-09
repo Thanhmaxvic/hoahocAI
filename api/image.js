@@ -53,6 +53,17 @@ export default async function handler(req, res) {
         if (!geminiResponse.ok) {
             const errText = await geminiResponse.text();
             console.error('Gemini API error:', geminiResponse.status, errText);
+            
+            // Fallback for Rate Limit (429) or Server Errors (50x)
+            if (geminiResponse.status === 429 || geminiResponse.status >= 500) {
+                console.warn('Falling back to Pollinations AI due to Gemini API error.');
+                const encodedPrompt = encodeURIComponent(englishPrompt);
+                const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=800&height=600&nologo=true`;
+                return res.status(200).json({ 
+                    imageUrl: pollinationsUrl 
+                });
+            }
+
             return res.status(500).json({ 
                 error: `Gemini API error: ${geminiResponse.status}`,
                 details: errText
@@ -95,9 +106,19 @@ export default async function handler(req, res) {
         }
     } catch (error) {
         console.error('Image API error:', error);
-        return res.status(200).json({ 
-            fallback: true, 
-            message: 'Tính năng vẽ sơ đồ hiện không khả dụng.' 
-        });
+        
+        // Final fallback on network or other unknown errors
+        try {
+            const fallbackPrompt = req.body?.prompt ? encodeURIComponent('Chemistry diagram: ' + req.body.prompt) : 'chemistry%20diagram';
+            const pollinationsUrl = `https://image.pollinations.ai/prompt/${fallbackPrompt}?width=800&height=600&nologo=true`;
+            return res.status(200).json({ 
+                imageUrl: pollinationsUrl 
+            });
+        } catch (e) {
+            return res.status(200).json({ 
+                fallback: true, 
+                message: 'Tính năng vẽ sơ đồ hiện không khả dụng.' 
+            });
+        }
     }
 }
